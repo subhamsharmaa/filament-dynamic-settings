@@ -15,7 +15,7 @@ A flexible Laravel package for managing dynamic settings in Filament admin panel
 
 ```bash
 composer require subham/filament-dynamic-settings
-php artisan filament-dynamic-settings install
+php artisan filament-dynamic-settings:install
 ```
 
 ## Setting Resource Image
