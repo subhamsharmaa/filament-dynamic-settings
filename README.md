@@ -15,7 +15,7 @@ A flexible Laravel package for managing dynamic settings in Filament admin panel
 
 ```bash
 composer require subham/filament-dynamic-settings
-php artisan filament-dynamic-settings install
+php artisan filament-dynamic-settings:install
 ```
 
 ## Setting Resource Image
@@ -45,6 +45,7 @@ return [
     'multi_tenant' => true,
     'tenant_model' => App\Models\Tenant::class,
     'tenant_column' => 'tenant_id',
+    'tenant_relation => 'tenant"
     // ... other config
 ];
 ```
