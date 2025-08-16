@@ -35,7 +35,7 @@ return [
         'updated_at'  => 'Updated At',
         'validation_rules' => 'Validation Rules',
         'custom_validation_message' => 'Custom Validation Message',
-        'tenant' => "Tenant"
+        'tenant'       => "Tenant"
     ],
 
     'types' => [
