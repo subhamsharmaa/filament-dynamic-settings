@@ -38,14 +38,14 @@ class FilamentDynamicSettingsServiceProvider extends PackageServiceProvider
         $this->registerCustomComponentResolvers();
         
         Blade::directive('setting', function ($expression) {
-            return "<?php echo e(Settings::get($expression)); ?>";
+            return "<?php echo e(\\Subham\\FilamentDynamicSettings\\Facades\\Settings::get($expression)); ?>";
         });
-        
-        Blade::directive('rawsetting', function ($expression) {
-            return "<?php echo Settings::get($expression); ?>";
-        });
-    }
 
+        Blade::directive('rawsetting', function ($expression) {
+            return "<?php echo \\Subham\\FilamentDynamicSettings\\Facades\\Settings::get($expression); ?>";
+        });
+
+    }
      protected function registerCustomComponentResolvers(): void
     {
         $resolvers = config('filament-dynamic-settings.component_resolvers', []);
