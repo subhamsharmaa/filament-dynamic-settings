@@ -60,14 +60,14 @@ class SettingResource extends Resource
     {
         $tenantField = [];
 
-        if (config('filament-dynamic-settings.multi_tenant', false) && static::canManageMultipleTenants()) {
+        if (config('filament-dynamic-settings.multi_tenant', false)) {
             $tenantModel = config('filament-dynamic-settings.tenant_model');
             $tenantColumn = config('filament-dynamic-settings.tenant_column', 'tenant_id');
 
             if ($tenantModel) {
                 $tenantField = [
                     Forms\Components\Select::make($tenantColumn)
-                        ->label('Tenant')
+                        ->label(__('filament-dynamic-settings::settings.fields.table'))
                         ->relationship('tenant', 'name')
                         ->searchable()
                         ->preload()
