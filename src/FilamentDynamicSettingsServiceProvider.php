@@ -2,6 +2,7 @@
 
 namespace Subham\FilamentDynamicSettings;
 
+use Illuminate\Support\Facades\Blade;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -35,6 +36,14 @@ class FilamentDynamicSettingsServiceProvider extends PackageServiceProvider
     {
         parent::boot();
         $this->registerCustomComponentResolvers();
+        
+        Blade::directive('setting', function ($expression) {
+            return "<?php echo e(Settings::get($expression)); ?>";
+        });
+        
+        Blade::directive('rawsetting', function ($expression) {
+            return "<?php echo Settings::get($expression); ?>";
+        });
     }
 
      protected function registerCustomComponentResolvers(): void
