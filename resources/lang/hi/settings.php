@@ -51,4 +51,10 @@ return [
         'validation_rules' => 'Laravel मान्यकरण नियम निर्धारित करें (जैसे required, max:255, email आदि)',
         'validation_rules_examples' => 'उदाहरण: required → (खाली), max → 255, min → 5, email → (खाली)',
     ],
+    'actions' => [
+        'submit' => 'सबमिट करें',
+    ],
+    'notifications' => [
+        'saved' => 'सेटिंग्स सफलतापूर्वक सहेज दी गईं',
+    ]
 ];

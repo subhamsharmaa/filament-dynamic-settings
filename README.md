@@ -69,6 +69,25 @@ $value = Setting::get('app_name', 'general', 'Default App Name');
 // Explicitly specify tenant
 $value = Setting::get('app_name', 'general', 'Default App Name', $tenantId);
 ```
+### Blade Directives for Filament Dynamic Settings
+```
+@setting('key_name','module_name','default_value','tenant');
+@rawsetting('key_name','module_name','default_value','tenant');
+```
+
+```
+<!-- Display site title with escaping -->
+<h1>@setting('site_title', 'general', 'My Website')</h1>
+
+<!-- Display HTML content without escaping -->
+<div class="footer">
+    @rawsetting('footer_html', 'content', '<p>Default footer</p>')
+</div>
+
+<!-- Multi-tenant usage -->
+<meta name="description" content="@setting('meta_description', 'seo', 'Default description', 'tenant_id')">
+```
+Use @setting for user-generated content. Only use @rawsetting when you need to output trusted HTML content.
 
 ### Creating Custom Components
 

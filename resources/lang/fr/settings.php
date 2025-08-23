@@ -51,4 +51,10 @@ return [
         'validation_rules' => 'Définir les règles de validation Laravel (ex: required, max:255, email, etc.)',
         'validation_rules_examples' => 'Exemples : required → (vide), max → 255, min → 5, email → (vide)',
     ],
+    'actions' => [
+        'submit' => 'Soumettre',
+    ],
+    'notifications' => [
+        'saved' => 'Paramètres enregistrés avec succès',
+    ]
 ];

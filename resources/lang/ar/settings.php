@@ -51,4 +51,10 @@ return [
         'validation_rules' => 'حدد قواعد التحقق في Laravel (مثل required, max:255, email, إلخ)',
         'validation_rules_examples' => 'أمثلة: required → (فارغ), max → 255, min → 5, email → (فارغ)',
     ],
+     'actions' => [
+        'submit' => 'إرسال',
+    ],
+    'notifications' => [
+        'saved' => 'تم حفظ الإعدادات بنجاح',
+    ]
 ];

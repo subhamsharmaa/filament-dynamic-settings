@@ -36,7 +36,8 @@ class ComponentResolver
                 return $componentClass::make($setting->key)
                     ->label($setting->label ?: str($setting->key)->title())
                     ->helperText($setting->description)
-                    ->default($setting->value);
+                    ->default($setting->value)
+                    ->translateLabel();
             }
         }
 
@@ -68,7 +69,8 @@ class ComponentResolver
             ->label($setting->label ?: str($setting->key)->title()->toString())
             ->helperText($setting->description)
             ->default($setting->value)
-            ->required($setting->options['required'] ?? false);
+            ->required($setting->options['required'] ?? false)
+            ->translateLabel();
 
         if ($setting->validation_rules && is_array($setting->validation_rules)) {
             $rules = self::buildValidationRules($setting->validation_rules);

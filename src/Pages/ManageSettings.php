@@ -167,18 +167,8 @@ class ManageSettings extends Page implements HasForms
         }
 
         Notification::make()
-            ->title('Settings saved successfully')
+            ->title(__("filament-dynamic-settings::settings.notifications.saved"))
             ->success()
             ->send();
-    }
-
-    protected function getFormActions(): array
-    {
-        return [
-            \Filament\Actions\Action::make('save')
-                ->label('Save Settings')
-                ->submit('save')
-                ->keyBindings(['mod+s']),
-        ];
     }
 }
