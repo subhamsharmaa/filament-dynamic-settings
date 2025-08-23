@@ -2,10 +2,12 @@
 
 namespace Subham\FilamentDynamicSettings\Pages;
 
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Section;
 use Filament\Notifications\Notification;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -23,8 +25,8 @@ class ManageSettings extends Page implements HasForms
         return self::shouldRegisterComponent('page');
     }
 
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static string $view = 'filament-dynamic-settings::filament.pages.manage-settings';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected string $view = 'filament-dynamic-settings::filament.pages.manage-settings';
 
     public ?array $data = [];
 
@@ -66,12 +68,12 @@ class ManageSettings extends Page implements HasForms
         $this->form->fill($data);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
         $layout = config('filament-dynamic-settings.layout', 'tabs');
 
-        return $form
-            ->schema(
+        return $schema
+            ->components(
                 $layout === 'tabs' 
                     ? $this->buildTabsSchema() 
                     : $this->buildSectionsSchema()
@@ -104,7 +106,7 @@ class ManageSettings extends Page implements HasForms
                 $components[] = ComponentResolver::resolve($setting);
             }
 
-            $tabs[] = Tabs\Tab::make($moduleConfig['label'])
+            $tabs[] = Tab::make($moduleConfig['label'])
                 ->icon($moduleConfig['icon'] ?? null)
                 ->schema([
                     Section::make()
@@ -167,18 +169,8 @@ class ManageSettings extends Page implements HasForms
         }
 
         Notification::make()
-            ->title('Settings saved successfully')
+            ->title(__("filament-dynamic-settings::settings.notifications.saved"))
             ->success()
             ->send();
-    }
-
-    protected function getFormActions(): array
-    {
-        return [
-            \Filament\Actions\Action::make('save')
-                ->label('Save Settings')
-                ->submit('save')
-                ->keyBindings(['mod+s']),
-        ];
     }
 }

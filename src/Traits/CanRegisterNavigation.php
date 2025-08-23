@@ -15,7 +15,7 @@ trait CanRegisterNavigation
             return false;
         }
 
-        $currentPanelId = Filament::getCurrentPanel()->getId();
+        $currentPanelId = Filament::getCurrentOrDefaultPanel()->getId();
 
         if (!empty($config['exclude_on_panels'])) {
             return !in_array($currentPanelId, $config['exclude_on_panels']);

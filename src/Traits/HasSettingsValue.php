@@ -2,6 +2,7 @@
 
 namespace Subham\FilamentDynamicSettings\Traits;
 
+use Exception;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,7 +36,7 @@ trait HasSettingsValue
     {
         try {
             return json_decode($value, true) ?? $value;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $value;
         }
     }
@@ -67,7 +68,7 @@ trait HasSettingsValue
         
         try {
             return Carbon::parse($value);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $value;
         }
     }

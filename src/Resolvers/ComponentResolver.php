@@ -2,7 +2,10 @@
 
 namespace Subham\FilamentDynamicSettings\Resolvers;
 
-use Filament\Forms\Components\Component;
+use Filament\Schemas\Components\Component;
+use Exception;
+use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
@@ -36,7 +39,8 @@ class ComponentResolver
                 return $componentClass::make($setting->key)
                     ->label($setting->label ?: str($setting->key)->title())
                     ->helperText($setting->description)
-                    ->default($setting->value);
+                    ->default($setting->value)
+                    ->translateLabel();
             }
         }
 
@@ -68,7 +72,8 @@ class ComponentResolver
             ->label($setting->label ?: str($setting->key)->title()->toString())
             ->helperText($setting->description)
             ->default($setting->value)
-            ->required($setting->options['required'] ?? false);
+            ->required($setting->options['required'] ?? false)
+            ->translateLabel();
 
         if ($setting->validation_rules && is_array($setting->validation_rules)) {
             $rules = self::buildValidationRules($setting->validation_rules);
@@ -93,7 +98,7 @@ class ComponentResolver
                 } else {
                     // invalid rule
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // invalide rule
             }
         }
@@ -107,7 +112,7 @@ class ComponentResolver
     protected static function isValidValidationRule(string $rule): bool
     {
         try {
-            $validator = \Illuminate\Support\Facades\Validator::make(
+            $validator = Validator::make(
                 ['test_field' => 'test_value'],
                 ['test_field' => $rule]
             );
@@ -115,9 +120,9 @@ class ComponentResolver
             $validator->passes();
             
             return true;
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

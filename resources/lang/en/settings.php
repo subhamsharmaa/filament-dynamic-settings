@@ -51,4 +51,10 @@ return [
         'validation_rules' => 'Define Laravel validation rules (e.g., required, max:255, email, etc.)',
         'validation_rules_examples' => 'Examples: required → (leave empty), max → 255, min → 5, email → (leave empty)',
     ],
+    'actions' => [
+        'submit' => 'Submit'
+    ],
+    "notifications"=>[
+        'saved' => "Settings Saved Sucessfully"
+    ]
 ];

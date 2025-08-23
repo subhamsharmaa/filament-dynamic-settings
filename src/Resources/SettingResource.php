@@ -2,9 +2,29 @@
 
 namespace Subham\FilamentDynamicSettings\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Actions\ViewAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\BulkAction;
+use Subham\FilamentDynamicSettings\Resources\Pages\ListSettings;
+use Subham\FilamentDynamicSettings\Resources\Pages\CreateSetting;
+use Subham\FilamentDynamicSettings\Resources\Pages\EditSetting;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Facades\Filament;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -32,7 +52,7 @@ class SettingResource extends Resource
      */
     protected static function shouldShowAllTenants(): bool
     {
-        $currentPanel = Filament::getCurrentPanel();
+        $currentPanel = Filament::getCurrentOrDefaultPanel();
         
         $globalPanels = config('filament-dynamic-settings.global_panels', []);
         
@@ -75,7 +95,7 @@ class SettingResource extends Resource
         return self::shouldRegisterComponent('resource');
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
         $tenantField = [];
 
@@ -86,7 +106,7 @@ class SettingResource extends Resource
 
             if ($tenantModel) {
                 $tenantField = [
-                    Forms\Components\Select::make($tenantColumn)
+                    Select::make($tenantColumn)
                         ->label('Tenant')
                         ->relationship($tenantRelation, 'name')
                         ->searchable()
@@ -96,12 +116,13 @@ class SettingResource extends Resource
             }
         }
 
-        return $form->schema([
-            Forms\Components\Section::make(__('filament-dynamic-settings::settings.form.section.general'))
+        return $schema->components([
+            Section::make(__('filament-dynamic-settings::settings.form.section.general'))
+                ->columnSpanFull()
                 ->schema([
                     ...$tenantField,
 
-                    Forms\Components\Select::make('module')
+                    Select::make('module')
                         ->label(__('filament-dynamic-settings::settings.fields.module'))
                         ->options(collect(config('filament-dynamic-settings.modules', []))
                             ->mapWithKeys(fn($config, $key) => [$key => $config['label']])
@@ -110,7 +131,7 @@ class SettingResource extends Resource
                         ->searchable()
                         ->preload(),
 
-                    Forms\Components\TextInput::make('key')
+                    TextInput::make('key')
                         ->label(__('filament-dynamic-settings::settings.fields.key'))
                         ->required()
                         ->maxLength(255)
@@ -125,7 +146,7 @@ class SettingResource extends Resource
                             return $rule;
                         }),
 
-                    Forms\Components\Select::make('type')
+                    Select::make('type')
                         ->label(__('filament-dynamic-settings::settings.fields.type'))
                         ->options(ComponentResolver::getAvailableTypes())
                         ->required()
@@ -137,28 +158,28 @@ class SettingResource extends Resource
                             }
                         }),
 
-                    Forms\Components\TextInput::make('label')
+                    TextInput::make('label')
                         ->label(__('filament-dynamic-settings::settings.fields.label'))
                         ->maxLength(255),
 
-                    Forms\Components\Textarea::make('description')
+                    Textarea::make('description')
                         ->label(__('filament-dynamic-settings::settings.fields.description'))
                         ->maxLength(65535)
                         ->columnSpanFull(),
 
-                    Forms\Components\TextInput::make('order')
+                    TextInput::make('order')
                         ->label(__('filament-dynamic-settings::settings.fields.order'))
                         ->numeric()
                         ->default(0),
 
-                    Forms\Components\KeyValue::make('options')
+                    KeyValue::make('options')
                         ->label(__('filament-dynamic-settings::settings.fields.options'))
                         ->columnSpanFull()
                         ->visible(fn($get) => in_array($get('type'), ['select', 'multi_select'])),
 
-                    Forms\Components\Section::make(__('filament-dynamic-settings::settings.form.section.validation'))
+                    Section::make(__('filament-dynamic-settings::settings.form.section.validation'))
                         ->schema([
-                            Forms\Components\KeyValue::make('validation_rules')
+                            KeyValue::make('validation_rules')
                                 ->label(__('filament-dynamic-settings::settings.fields.validation_rules'))
                                 ->columnSpanFull()
                                 ->keyLabel(__('filament-dynamic-settings::settings.labels.validation_rule_name'))
@@ -171,7 +192,7 @@ class SettingResource extends Resource
                         ->collapsed()
                         ->columns(1),
 
-                    Forms\Components\Toggle::make('is_active')
+                    Toggle::make('is_active')
                         ->label(__('filament-dynamic-settings::settings.fields.is_active'))
                         ->default(true),
                 ])
@@ -182,39 +203,39 @@ class SettingResource extends Resource
     public static function table(Table $table): Table
     {
         $columns = [
-            Tables\Columns\TextColumn::make('module')
+            TextColumn::make('module')
                 ->label(__('filament-dynamic-settings::settings.fields.module'))
                 ->badge()
                 ->searchable()
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('key')
+            TextColumn::make('key')
                 ->label(__('filament-dynamic-settings::settings.fields.key'))
                 ->searchable()
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('type')
+            TextColumn::make('type')
                 ->label(__('filament-dynamic-settings::settings.fields.type'))
                 ->badge()
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('order')
+            TextColumn::make('order')
                 ->label(__('filament-dynamic-settings::settings.fields.order'))
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
 
-            Tables\Columns\IconColumn::make('is_active')
+            IconColumn::make('is_active')
                 ->label(__('filament-dynamic-settings::settings.fields.is_active'))
                 ->boolean()
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('created_at')
+            TextColumn::make('created_at')
                 ->label(__('filament-dynamic-settings::settings.fields.created_at'))
                 ->dateTime()
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
 
-            Tables\Columns\TextColumn::make('updated_at')
+            TextColumn::make('updated_at')
                 ->label(__('filament-dynamic-settings::settings.fields.updated_at'))
                 ->dateTime()
                 ->sortable()
@@ -225,7 +246,7 @@ class SettingResource extends Resource
             $tenantRelation = config('filament-dynamic-settings.tenant_relation', 'tenant');
             
             array_splice($columns, 1, 0, [
-                Tables\Columns\TextColumn::make($tenantRelation . '.name')
+                TextColumn::make($tenantRelation . '.name')
                     ->label(__('filament-dynamic-settings::settings.fields.tenant'))
                     ->sortable()
                     ->searchable()
@@ -234,17 +255,17 @@ class SettingResource extends Resource
         }
 
         $filters = [
-            Tables\Filters\SelectFilter::make('module')
+            SelectFilter::make('module')
                 ->label(__('filament-dynamic-settings::settings.fields.module'))
                 ->options(collect(config('filament-dynamic-settings.modules', []))
                     ->mapWithKeys(fn($config, $key) => [$key => $config['label']])
                     ->toArray()),
 
-            Tables\Filters\SelectFilter::make('type')
+            SelectFilter::make('type')
                 ->label(__('filament-dynamic-settings::settings.fields.type'))
                 ->options(ComponentResolver::getAvailableTypes()),
 
-            Tables\Filters\TernaryFilter::make('is_active')
+            TernaryFilter::make('is_active')
                 ->label(__('filament-dynamic-settings::settings.fields.is_active')),
         ];
 
@@ -252,7 +273,7 @@ class SettingResource extends Resource
             $tenantRelation = config('filament-dynamic-settings.tenant_relation', 'tenant');
             
             array_unshift($filters, 
-                Tables\Filters\SelectFilter::make(config('filament-dynamic-settings.tenant_column','tenant_id'))
+                SelectFilter::make(config('filament-dynamic-settings.tenant_column','tenant_id'))
                     ->label(__('filament-dynamic-settings::settings.fields.tenant'))
                     ->relationship($tenantRelation, 'name')
                     ->searchable()
@@ -265,21 +286,21 @@ class SettingResource extends Resource
             ->defaultSort('order', 'asc')
             ->columns($columns)
             ->filters($filters)
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+            ->recordActions([
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('activate')
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('activate')
                         ->label('Activate Selected')
                         ->icon('heroicon-o-check-circle')
                         ->action(fn($records) => $records->each->update(['is_active' => true]))
                         ->requiresConfirmation()
                         ->color('success'),
-                    Tables\Actions\BulkAction::make('deactivate')
+                    BulkAction::make('deactivate')
                         ->label('Deactivate Selected')
                         ->icon('heroicon-o-x-circle')
                         ->action(fn($records) => $records->each->update(['is_active' => false]))
@@ -294,13 +315,13 @@ class SettingResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSettings::route('/'),
-            'create' => Pages\CreateSetting::route('/create'),
-            'edit' => Pages\EditSetting::route('/{record}/edit'),
+            'index' => ListSettings::route('/'),
+            'create' => CreateSetting::route('/create'),
+            'edit' => EditSetting::route('/{record}/edit'),
         ];
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
 

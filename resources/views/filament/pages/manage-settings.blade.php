@@ -2,13 +2,8 @@
     <form wire:submit="save">
         {{ $this->form }}
         
-        <x-filament-panels::form.actions
-            :actions="[
-                \Filament\Actions\Action::make('save')
-                    ->label('Save Settings')
-                    ->submit('save')
-                    ->keyBindings(['mod+s'])
-            ]"
-        />
+        <x-filament::button type="submit" class="mt-4">
+        {{ __('filament-dynamic-settings::settings.actions.submit') }}
+    </x-filament::button>
     </form>
 </x-filament-panels::page>

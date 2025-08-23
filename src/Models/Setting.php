@@ -2,6 +2,8 @@
 
 namespace Subham\FilamentDynamicSettings\Models;
 
+use Exception;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -139,14 +141,14 @@ class Setting extends Model
     public function tenant(): BelongsTo
     {
         if (!config('filament-dynamic-settings.multi_tenant', false)) {
-            throw new \Exception('Tenant relationship is only available in multi-tenant mode');
+            throw new Exception('Tenant relationship is only available in multi-tenant mode');
         }
 
         $tenantModel = config('filament-dynamic-settings.tenant_model');
         $tenantColumn = config('filament-dynamic-settings.tenant_column', 'tenant_id');
         
         if (!$tenantModel) {
-            throw new \Exception('Tenant model must be configured for multi-tenant mode');
+            throw new Exception('Tenant model must be configured for multi-tenant mode');
         }
 
         return $this->belongsTo($tenantModel, $tenantColumn);
@@ -155,7 +157,7 @@ class Setting extends Model
     protected static function getCurrentTenantId()
     {
         if (class_exists('\Filament\Facades\Filament')) {
-            $tenant = \Filament\Facades\Filament::getTenant();
+            $tenant = Filament::getTenant();
             if ($tenant) {
                 return $tenant->getKey();
             }
