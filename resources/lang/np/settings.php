@@ -51,4 +51,10 @@ return [
         'validation_rules' => 'Laravel भ्यालिडेसन नियमहरू निर्धारण गर्नुहोस् (जस्तै required, max:255, email आदि)',
         'validation_rules_examples' => 'उदाहरणहरू: required → (खाली), max → 255, min → 5, email → (खाली)',
     ],
+    'actions' => [
+        'submit' => 'पेश गर्नुहोस्',
+    ],
+    'notifications' => [
+        'saved' => 'सेटिङहरू सफलतापूर्वक सुरक्षित गरियो',
+    ]
 ];
