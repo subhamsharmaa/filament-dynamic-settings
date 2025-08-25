@@ -17,6 +17,14 @@ A flexible Laravel package for managing dynamic settings in Filament admin panel
 composer require subham/filament-dynamic-settings
 php artisan filament-dynamic-settings install
 ```
+## Filament Compatibility
+
+| Version | Filament Version |
+|---------|------------------|
+| `^2.x`  | Filament v4      |
+| `^1.x`  | Filament v3      |
+
+Ensure that you are using the correct version of this package that is compatible with your Filament installation
 
 ## Setting Resource Image
 

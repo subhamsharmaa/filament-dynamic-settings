@@ -52,6 +52,9 @@ return [
         'validation_rules_examples' => 'Beispiele: required → (leer), max → 255, min → 5, email → (leer)',
     ],
     'actions' => [
-        'submit' => 'Submit'
+        'submit' => 'Absenden',
+    ],
+    'notifications' => [
+        'saved' => 'Einstellungen erfolgreich gespeichert',
     ]
 ];
