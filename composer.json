@@ -14,18 +14,18 @@
     },
     "autoload": {
         "psr-4": {
-            "subham\\FilamentDynamicSettings\\": "src/"
+            "Subham\\FilamentDynamicSettings\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "subham\\FilamentDynamicSettings\\Tests\\": "tests/"
+            "Subham\\FilamentDynamicSettings\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "subham\\FilamentDynamicSettings\\FilamentDynamicSettingsServiceProvider"
+                "Subham\\FilamentDynamicSettings\\FilamentDynamicSettingsServiceProvider"
             ]
         }
     }
