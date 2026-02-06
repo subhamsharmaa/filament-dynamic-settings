@@ -7,6 +7,7 @@ use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 use Subham\FilamentDynamicSettings\Traits\HasSettingsValue;
 
 class Setting extends Model
@@ -135,7 +136,8 @@ class Setting extends Model
             $whereClause[$tenantColumn] = $data[$tenantColumn];
         }
 
-        return static::updateOrCreate($whereClause, array_merge($data, $options));
+        static::updateOrCreate($whereClause, array_merge($data, $options));
+        self::forget($key,$module,$tenantId);
     }
 
     public function tenant(): BelongsTo
@@ -168,5 +170,11 @@ class Setting extends Model
         }
 
         return null;
+    }
+
+    public static function forget(string $key, string $module = 'general', $tenantId = null): void
+    {
+        $cacheKey = "settings:{$tenantId}:{$module}:{$key}";
+        Cache::forget($cacheKey);
     }
 }

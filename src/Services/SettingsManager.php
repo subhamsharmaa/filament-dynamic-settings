@@ -1,6 +1,7 @@
 <?php
 namespace Subham\FilamentDynamicSettings\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Subham\FilamentDynamicSettings\Models\Setting;
 
 class SettingsManager
@@ -10,17 +11,21 @@ class SettingsManager
      */
     public function get(string $key, string $module = 'general', $default = null, $tenantId = null)
     {
-        $query = Setting::where('module', $module)
-            ->where('key', $key)
-            ->where('is_active', true);
+        $cacheKey = "settings:{$tenantId}:{$module}:{$key}";
+        
+        return Cache::rememberForever($cacheKey,function () use ($key, $module, $default, $tenantId) {
+            $query = Setting::where('module', $module)
+                ->where('key', $key)
+                ->where('is_active', true);
 
-        if (config('filament-dynamic-settings.multi_tenant', false)) {
-            $query->forTenant($tenantId);
-        }
+            if (config('filament-dynamic-settings.multi_tenant', false)) {
+                $query->forTenant($tenantId);
+            }
 
-        $setting = $query->first();
+            $setting = $query->first();
 
-        return $setting ? $setting->getFormattedValue() : $default;
+            return $setting ? $setting->getFormattedValue() : $default;
+        });
     }
 
     /**
