@@ -13,20 +13,23 @@ trait HasSettingsValue
      */
     public function getFormattedValue()
     {
-        if (is_null($this->value) || $this->value === '') {
+        $value = $this->attributes['value'] ?? null;
+        if (is_null($value) || $value === '') {
             return null;
         }
-
         return match ($this->type) {
-            'boolean' => (bool) $this->value,
-            'number', 'integer' => is_numeric($this->value) ? (int) $this->value : $this->value,
-            'numeric' => is_numeric($this->value) ? (float) $this->value : $this->value,
-            'json' => $this->parseJson($this->value),
-            'file', 'image' => $this->getFileUrl($this->value),
-            'date' => $this->parseDate($this->value),
-            'date_time' => $this->parseDate($this->value),
-            default => $this->value,
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'number', 'integer' => is_numeric($value) ? (int) $value : $value,
+            'numeric' => is_numeric($value) ? (float) $value : $value,
+            'json' => $this->parseJson($value),
+            'file', 'image' => $this->getFileUrl($value),
+            'date', 'date_time' => $this->parseDate($value),
+            default => $value,
         };
+    }
+    public function getRawValue()
+    {
+        return $this->attributes['value'] ?? null;
     }
 
     /**
@@ -46,8 +49,9 @@ trait HasSettingsValue
      */
     protected function getFileUrl($value)
     {
-        if (empty($value)) return null;
-        
+        if (empty($value))
+            return null;
+
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             return $value;
         }
@@ -64,20 +68,13 @@ trait HasSettingsValue
      */
     protected function parseDate($value)
     {
-        if (empty($value)) return null;
-        
+        if (empty($value))
+            return null;
+
         try {
             return Carbon::parse($value);
         } catch (Exception $e) {
             return $value;
         }
-    }
-
-    /**
-     * Get raw value (bypass formatting)
-     */
-    public function getRawValue()
-    {
-        return $this->value;
     }
 }

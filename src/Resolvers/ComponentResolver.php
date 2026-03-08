@@ -2,19 +2,16 @@
 
 namespace Subham\FilamentDynamicSettings\Resolvers;
 
-use Filament\Schemas\Components\Component;
-use Exception;
-use Illuminate\Support\Facades\Validator;
-use InvalidArgumentException;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Component;
 use Subham\FilamentDynamicSettings\Models\Setting;
 
 class ComponentResolver
@@ -28,25 +25,27 @@ class ComponentResolver
 
     public static function resolve(Setting $setting): Component
     {
+        // 1. Check registered callable resolvers first
         if (isset(static::$customResolvers[$setting->type])) {
             return call_user_func(static::$customResolvers[$setting->type], $setting);
         }
 
+        // 2. Check config-based custom components
         $customComponents = config('filament-dynamic-settings.custom_components', []);
         if (isset($customComponents[$setting->type])) {
             $componentClass = $customComponents[$setting->type]['component'];
             if (class_exists($componentClass)) {
                 return $componentClass::make($setting->key)
-                    ->label($setting->label ?: str($setting->key)->title())
+                    ->label($setting->label ?: str($setting->key)->title()->toString())
                     ->helperText($setting->description)
-                    ->default($setting->value)
+                    ->default($setting->getRawValue())
                     ->translateLabel();
             }
         }
 
+        // 3. Resolve built-in component
         return static::resolveDefaultComponent($setting);
     }
-
 
     protected static function resolveDefaultComponent(Setting $setting): Component
     {
@@ -71,62 +70,39 @@ class ComponentResolver
         $component = $component
             ->label($setting->label ?: str($setting->key)->title()->toString())
             ->helperText($setting->description)
-            ->default($setting->value)
+            ->default($setting->getRawValue())
             ->required($setting->options['required'] ?? false)
             ->translateLabel();
 
-        if ($setting->validation_rules && is_array($setting->validation_rules)) {
-            $rules = self::buildValidationRules($setting->validation_rules);
-            if (!empty($rules)) {
+        if (! empty($setting->validation_rules) && is_array($setting->validation_rules)) {
+            $rules = static::buildValidationRules($setting->validation_rules);
+            if (! empty($rules)) {
                 $component = $component->rules($rules);
             }
+        }
+
+        if ($setting->custom_validation_message) {
+            $component = $component->validationMessages(
+                is_array($setting->custom_validation_message)
+                    ? $setting->custom_validation_message
+                    : ['default' => $setting->custom_validation_message]
+            );
         }
 
         return $component;
     }
 
+    /**
+     * Build Laravel validation rules from the key-value config.
+     * Trusts admin input — validation of rules should happen at write time, not render time.
+     */
     protected static function buildValidationRules(array $validationRules): array
     {
-        $rules = [];
-
-        foreach ($validationRules as $ruleName => $ruleValue) {
-            try {
-                $rule = empty($ruleValue) ? $ruleName : $ruleName . ':' . $ruleValue;
-
-                if (self::isValidValidationRule($rule)) {
-                    $rules[] = $rule;
-                } else {
-                    // invalid rule
-                }
-            } catch (Exception $e) {
-                // invalide rule
-            }
-        }
-
-        return $rules;
+        return collect($validationRules)
+            ->map(fn ($ruleValue, $ruleName) => empty($ruleValue) ? $ruleName : "{$ruleName}:{$ruleValue}")
+            ->values()
+            ->all();
     }
-
-    /**
-     * Test if a validation rule is valid by attempting to use it
-     */
-    protected static function isValidValidationRule(string $rule): bool
-    {
-        try {
-            $validator = Validator::make(
-                ['test_field' => 'test_value'],
-                ['test_field' => $rule]
-            );
-
-            $validator->passes();
-            
-            return true;
-        } catch (InvalidArgumentException $e) {
-            return false;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
 
     public static function getAvailableTypes(): array
     {
@@ -134,6 +110,8 @@ class ComponentResolver
         $customTypes = array_keys(config('filament-dynamic-settings.custom_components', []));
         $registeredTypes = array_keys(static::$customResolvers);
 
-        return array_merge($defaultTypes, array_combine($customTypes, $customTypes), array_combine($registeredTypes, $registeredTypes));
+        $extra = array_merge($customTypes, $registeredTypes);
+
+        return array_merge($defaultTypes, array_combine($extra, $extra));
     }
 }

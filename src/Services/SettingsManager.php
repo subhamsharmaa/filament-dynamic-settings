@@ -1,4 +1,5 @@
 <?php
+
 namespace Subham\FilamentDynamicSettings\Services;
 
 use Illuminate\Support\Facades\Cache;
@@ -6,14 +7,24 @@ use Subham\FilamentDynamicSettings\Models\Setting;
 
 class SettingsManager
 {
-     /**
-     * Get setting value with proper formatting
+    /**
+     * Build a normalized cache key for a setting.
      */
-    public function get(string $key, string $module = 'general', $default = null, $tenantId = null)
+    protected function cacheKey(string $key, string $module, $tenantId = null): string
     {
-        $cacheKey = "settings:{$tenantId}:{$module}:{$key}";
-        
-        return Cache::rememberForever($cacheKey,function () use ($key, $module, $default, $tenantId) {
+        $resolvedTenantId = $tenantId ?? Setting::getCurrentTenantId();
+
+        return "settings:{$resolvedTenantId}:{$module}:{$key}";
+    }
+
+    /**
+     * Get setting value with proper formatting.
+     */
+    public function get(string $key, string $module = 'general', $default = null, $tenantId = null): mixed
+    {
+        $cacheKey = $this->cacheKey($key, $module, $tenantId);
+
+        return Cache::rememberForever($cacheKey, function () use ($key, $module, $default, $tenantId) {
             $query = Setting::where('module', $module)
                 ->where('key', $key)
                 ->where('is_active', true);
@@ -29,9 +40,9 @@ class SettingsManager
     }
 
     /**
-     * Get raw setting value
+     * Get raw setting value (bypasses formatting and cache).
      */
-    public function raw(string $key, string $module = 'general', $default = null, $tenantId = null)
+    public function raw(string $key, string $module = 'general', $default = null, $tenantId = null): mixed
     {
         $query = Setting::where('module', $module)
             ->where('key', $key)
@@ -47,9 +58,9 @@ class SettingsManager
     }
 
     /**
-     * Set setting value
+     * Set setting value and invalidate cache.
      */
-    public function set(string $key, $value, string $module = 'general', $tenantId = null)
+    public function set(string $key, $value, string $module = 'general', $tenantId = null): bool
     {
         $query = Setting::where('module', $module)->where('key', $key);
 
@@ -61,6 +72,8 @@ class SettingsManager
 
         if ($setting) {
             $setting->update(['value' => $value]);
+            Cache::forget($this->cacheKey($key, $module, $tenantId));
+
             return true;
         }
 
@@ -68,9 +81,9 @@ class SettingsManager
     }
 
     /**
-     * Get all settings for a module
+     * Get all settings for a module.
      */
-    public function module(string $module, $tenantId = null)
+    public function module(string $module, $tenantId = null): array
     {
         $query = Setting::where('module', $module)
             ->where('is_active', true)

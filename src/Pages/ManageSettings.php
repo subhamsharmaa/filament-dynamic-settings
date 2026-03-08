@@ -2,30 +2,32 @@
 
 namespace Subham\FilamentDynamicSettings\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Tabs;
-use Filament\Actions\Action;
-use Filament\Pages\Page;
-use Filament\Notifications\Notification;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
+use Illuminate\Support\Collection;
 use Subham\FilamentDynamicSettings\Models\Setting;
 use Subham\FilamentDynamicSettings\Resolvers\ComponentResolver;
 use Subham\FilamentDynamicSettings\Traits\CanRegisterNavigation;
 
 class ManageSettings extends Page implements HasForms
 {
-    use InteractsWithForms;
     use CanRegisterNavigation;
-    
+    use InteractsWithForms;
+
+    protected ?Collection $settings = null;
     public static function shouldRegisterNavigation(): bool
     {
-        return self::shouldRegisterComponent('page');
+        return static::shouldRegisterComponent('page');
     }
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+
     protected string $view = 'filament-dynamic-settings::filament.pages.manage-settings';
 
     public ?array $data = [];
@@ -47,22 +49,16 @@ class ManageSettings extends Page implements HasForms
 
     public function mount(): void
     {
+        $this->settings = $this->getAllSettings();
         $this->fillForm();
     }
 
     protected function fillForm(): void
     {
-        $query = Setting::active()->orderBy('order');
-
-        if (config('filament-dynamic-settings.multi_tenant', false)) {
-            $query->forTenant();
-        }
-
-        $settings = $query->get();
         $data = [];
 
-        foreach ($settings as $setting) {
-            $data[$setting->module][$setting->key] = $setting->value;
+        foreach ($this->settings as $setting) {
+            $data[$setting->module][$setting->key] = $setting->getRawValue();
         }
 
         $this->form->fill($data);
@@ -74,44 +70,73 @@ class ManageSettings extends Page implements HasForms
 
         return $schema
             ->components(
-                $layout === 'tabs' 
-                    ? $this->buildTabsSchema() 
-                    : $this->buildSectionsSchema()
+                $layout === 'tabs'
+                ? $this->buildTabsSchema()
+                : $this->buildSectionsSchema()
             )
             ->statePath('data');
     }
 
-    protected function buildTabsSchema(): array
+    /**
+     * Fetch all active settings in a single query, grouped by module.
+     */
+    protected function getAllSettings(): Collection
+    {
+        if ($this->settings !== null) {
+            return $this->settings;
+        }
+
+        $query = Setting::active()->orderBy('order');
+
+        if (config('filament-dynamic-settings.multi_tenant', false)) {
+            $query->forTenant();
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Build resolved component arrays keyed by module.
+     */
+    protected function buildModuleSchemas(): array
     {
         $modules = config('filament-dynamic-settings.modules', []);
-        $tabs = [];
-        uasort($modules, function ($a, $b) {
-            return ($a['sort'] ?? 0) <=> ($b['sort'] ?? 0);
-        });
+        $settingsByModule = $this->getAllSettings()->groupBy('module');
+
+        uasort($modules, fn($a, $b) => ($a['sort'] ?? 0) <=> ($b['sort'] ?? 0));
+
+        $result = [];
         foreach ($modules as $moduleKey => $moduleConfig) {
-            $query = Setting::byModule($moduleKey)->active()->orderBy('order');
-
-            if (config('filament-dynamic-settings.multi_tenant', false)) {
-                $query->forTenant();
-            }
-
-            $settings = $query->get();
+            $settings = $settingsByModule->get($moduleKey, collect());
 
             if ($settings->isEmpty()) {
                 continue;
             }
 
-            $components = [];
-            foreach ($settings as $setting) {
-                $components[] = ComponentResolver::resolve($setting);
-            }
+            $components = $settings->map(
+                fn(Setting $setting) => ComponentResolver::resolve($setting)
+            )->all();
 
-            $tabs[] = Tab::make($moduleConfig['label'])
-                ->icon($moduleConfig['icon'] ?? null)
+            $result[$moduleKey] = [
+                'config' => $moduleConfig,
+                'components' => $components,
+            ];
+        }
+
+        return $result;
+    }
+
+    protected function buildTabsSchema(): array
+    {
+        $tabs = [];
+
+        foreach ($this->buildModuleSchemas() as $moduleKey => $data) {
+            $tabs[] = Tab::make($data['config']['label'])
+                ->icon($data['config']['icon'] ?? null)
                 ->schema([
                     Section::make()
-                        ->schema($components)
-                        ->statePath($moduleKey)
+                        ->schema($data['components'])
+                        ->statePath($moduleKey),
                 ]);
         }
 
@@ -119,40 +144,22 @@ class ManageSettings extends Page implements HasForms
             Tabs::make('Settings')
                 ->tabs($tabs)
                 ->columnSpanFull()
-                 ->persistTabInQueryString()
+                ->persistTabInQueryString(),
         ];
     }
 
     protected function buildSectionsSchema(): array
     {
-        $modules = config('filament-dynamic-settings.modules', []);
         $sections = [];
 
-        foreach ($modules as $moduleKey => $moduleConfig) {
-            $query = Setting::byModule($moduleKey)->active()->orderBy('order');
-
-            if (config('filament-dynamic-settings.multi_tenant', false)) {
-                $query->forTenant();
-            }
-
-            $settings = $query->get();
-
-            if ($settings->isEmpty()) {
-                continue;
-            }
-
-            $components = [];
-            foreach ($settings as $setting) {
-                $components[] = ComponentResolver::resolve($setting);
-            }
-
-            $sections[] = Section::make($moduleConfig['label'])
-                ->description($moduleConfig['description'] ?? null)
-                ->icon($moduleConfig['icon'] ?? null)
+        foreach ($this->buildModuleSchemas() as $moduleKey => $data) {
+            $sections[] = Section::make($data['config']['label'])
+                ->description($data['config']['description'] ?? null)
+                ->icon($data['config']['icon'] ?? null)
                 ->schema([
                     Section::make()
-                        ->schema($components)
-                        ->statePath($moduleKey)
+                        ->schema($data['components'])
+                        ->statePath($moduleKey),
                 ]);
         }
 
@@ -162,6 +169,7 @@ class ManageSettings extends Page implements HasForms
     public function save(): void
     {
         $data = $this->form->getState();
+
         foreach ($data as $module => $settings) {
             foreach ($settings as $settingKey => $value) {
                 Setting::set($settingKey, $value, $module);
@@ -169,7 +177,7 @@ class ManageSettings extends Page implements HasForms
         }
 
         Notification::make()
-            ->title(__("filament-dynamic-settings::settings.notifications.saved"))
+            ->title(__('filament-dynamic-settings::settings.notifications.saved'))
             ->success()
             ->send();
     }

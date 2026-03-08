@@ -20,7 +20,6 @@ class FilamentDynamicSettingsServiceProvider extends PackageServiceProvider
         $package->name(static::$name)
             ->hasViews()
             ->hasConfigFile('filament-dynamic-settings')
-            ->discoversMigrations()
             ->hasTranslations()
             ->hasMigration('create_settings_table')
             ->hasInstallCommand(function (InstallCommand $command) {
@@ -31,22 +30,22 @@ class FilamentDynamicSettingsServiceProvider extends PackageServiceProvider
                     ->askToStarRepoOnGitHub('ssuvam-dev/filament-dynamic-settings');
             });
     }
-    
+
     public function boot(): void
     {
         parent::boot();
         $this->registerCustomComponentResolvers();
-        
+
         Blade::directive('setting', function ($expression) {
             return "<?php echo e(\\Subham\\FilamentDynamicSettings\\Facades\\Settings::get($expression)); ?>";
         });
 
         Blade::directive('rawsetting', function ($expression) {
-            return "<?php echo \\Subham\\FilamentDynamicSettings\\Facades\\Settings::get($expression); ?>";
+            return "<?php echo \\Subham\\FilamentDynamicSettings\\Facades\\Settings::raw($expression); ?>";
         });
-
     }
-     protected function registerCustomComponentResolvers(): void
+
+    protected function registerCustomComponentResolvers(): void
     {
         $resolvers = config('filament-dynamic-settings.component_resolvers', []);
 
@@ -57,10 +56,11 @@ class FilamentDynamicSettingsServiceProvider extends PackageServiceProvider
         }
     }
 
-    public function register()
+    public function register(): void
     {
         parent::register();
-        $this->app->singleton('dynamic-settings', function ($app) {
+
+        $this->app->singleton('dynamic-settings', function () {
             return new SettingsManager();
         });
     }

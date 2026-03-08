@@ -64,17 +64,23 @@ return [
 ```php
 use Subham\FilamentDynamicSettings\Facades\Settings;
 
-// Get a setting
-$value = Setting::get('app_name', 'general', 'Default App Name');
+// Get a setting (cached, with type formatting)
+$value = Settings::get('app_name', 'general', 'Default App Name');
 
-// Set a setting
-Setting::set('app_name', 'My Application', 'general');
+// Get a raw setting value (no cache, no formatting)
+$raw = Settings::raw('app_name', 'general', 'Default App Name');
+
+// Set a setting value (updates existing, invalidates cache)
+Settings::set('app_name', 'My Application', 'general');
+
+// Get all settings for a module
+$allGeneral = Settings::module('general');
 
 // In multi-tenant mode (tenant ID is auto-detected)
-$value = Setting::get('app_name', 'general', 'Default App Name');
+$value = Settings::get('app_name', 'general', 'Default App Name');
 
 // Explicitly specify tenant
-$value = Setting::get('app_name', 'general', 'Default App Name', $tenantId);
+$value = Settings::get('app_name', 'general', 'Default App Name', $tenantId);
 ```
 
 ### Blade Directives for Filament Dynamic Settings

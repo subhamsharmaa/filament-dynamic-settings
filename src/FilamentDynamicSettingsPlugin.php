@@ -14,13 +14,24 @@ class FilamentDynamicSettingsPlugin implements Plugin
         return 'filament-dynamic-settings';
     }
 
+    public static function make(): static
+    {
+        return app(static::class);
+    }
+
     public function register(Panel $panel): void
     {
-        $panel->pages([
-            ManageSettings::class,
-        ])->resources([
-            SettingResource::class
-        ]);
+        if (config('filament-dynamic-settings.page.register', true)) {
+            $panel->pages([
+                ManageSettings::class,
+            ]);
+        }
+
+        if (config('filament-dynamic-settings.resource.register', true)) {
+            $panel->resources([
+                SettingResource::class,
+            ]);
+        }
     }
 
     public function boot(Panel $panel): void

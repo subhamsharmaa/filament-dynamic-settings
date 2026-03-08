@@ -2,64 +2,61 @@
 
 namespace Subham\FilamentDynamicSettings\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\BulkAction;
-use Subham\FilamentDynamicSettings\Resources\Pages\ListSettings;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Subham\FilamentDynamicSettings\Models\Setting;
+use Subham\FilamentDynamicSettings\Resolvers\ComponentResolver;
 use Subham\FilamentDynamicSettings\Resources\Pages\CreateSetting;
 use Subham\FilamentDynamicSettings\Resources\Pages\EditSetting;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Facades\Filament;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Subham\FilamentDynamicSettings\Models\Setting;
-use Subham\FilamentDynamicSettings\Resources\Pages;
-use Subham\FilamentDynamicSettings\Resolvers\ComponentResolver;
+use Subham\FilamentDynamicSettings\Resources\Pages\ListSettings;
 use Subham\FilamentDynamicSettings\Traits\CanRegisterNavigation;
 
 class SettingResource extends Resource
 {
     use CanRegisterNavigation;
+
     protected static ?string $model = Setting::class;
+
+    protected static ?string $tenantOwnershipRelationshipName = 'tenant';
 
     public static function isScopedToTenant(): bool
     {
         if (static::shouldShowAllTenants()) {
             return false;
         }
-        
+
         return config('filament-dynamic-settings.multi_tenant', false);
     }
 
     /**
-     * Determine if we should show all tenants (used in global panels)
+     * Determine if we should show all tenants (used in global panels).
      */
     protected static function shouldShowAllTenants(): bool
     {
         $currentPanel = Filament::getCurrentOrDefaultPanel();
-        
         $globalPanels = config('filament-dynamic-settings.global_panels', []);
-        
+
         return in_array($currentPanel?->getId(), $globalPanels);
     }
-
-    protected static ?string $tenantOwnershipRelationshipName = 'tenant';
 
     public static function getNavigationLabel(): string
     {
@@ -71,7 +68,7 @@ class SettingResource extends Resource
         if (static::shouldShowAllTenants()) {
             return config('filament-dynamic-settings.navigation.global_group', 'Global Management');
         }
-        
+
         return config('filament-dynamic-settings.navigation.group', 'System');
     }
 
@@ -92,7 +89,7 @@ class SettingResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return self::shouldRegisterComponent('resource');
+        return static::shouldRegisterComponent('resource');
     }
 
     public static function form(Schema $schema): Schema
@@ -107,11 +104,11 @@ class SettingResource extends Resource
             if ($tenantModel) {
                 $tenantField = [
                     Select::make($tenantColumn)
-                        ->label('Tenant')
+                        ->label(__('filament-dynamic-settings::settings.fields.tenant'))
                         ->relationship($tenantRelation, 'name')
                         ->searchable()
                         ->preload()
-                        ->required(true),
+                        ->required(),
                 ];
             }
         }
@@ -125,7 +122,7 @@ class SettingResource extends Resource
                     Select::make('module')
                         ->label(__('filament-dynamic-settings::settings.fields.module'))
                         ->options(collect(config('filament-dynamic-settings.modules', []))
-                            ->mapWithKeys(fn($config, $key) => [$key => $config['label']])
+                            ->mapWithKeys(fn ($config, $key) => [$key => $config['label']])
                             ->toArray())
                         ->required()
                         ->searchable()
@@ -153,7 +150,7 @@ class SettingResource extends Resource
                         ->reactive()
                         ->searchable()
                         ->afterStateUpdated(function ($state, callable $set) {
-                            if (!in_array($state, ['select', 'multi_select'])) {
+                            if (! in_array($state, ['select', 'multi_select'])) {
                                 $set('options', null);
                             }
                         }),
@@ -175,7 +172,7 @@ class SettingResource extends Resource
                     KeyValue::make('options')
                         ->label(__('filament-dynamic-settings::settings.fields.options'))
                         ->columnSpanFull()
-                        ->visible(fn($get) => in_array($get('type'), ['select', 'multi_select'])),
+                        ->visible(fn ($get) => in_array($get('type'), ['select', 'multi_select'])),
 
                     Section::make(__('filament-dynamic-settings::settings.form.section.validation'))
                         ->schema([
@@ -187,6 +184,10 @@ class SettingResource extends Resource
                                 ->helperText(__('filament-dynamic-settings::settings.hints.validation_rules'))
                                 ->hint(__('filament-dynamic-settings::settings.hints.validation_rules_examples'))
                                 ->addActionLabel(__('filament-dynamic-settings::settings.labels.add_validation_rule')),
+
+                            Textarea::make('custom_validation_message')
+                                ->label(__('filament-dynamic-settings::settings.fields.custom_validation_message'))
+                                ->columnSpanFull(),
                         ])
                         ->collapsible()
                         ->collapsed()
@@ -244,9 +245,9 @@ class SettingResource extends Resource
 
         if (config('filament-dynamic-settings.multi_tenant', false) && static::shouldShowAllTenants()) {
             $tenantRelation = config('filament-dynamic-settings.tenant_relation', 'tenant');
-            
+
             array_splice($columns, 1, 0, [
-                TextColumn::make($tenantRelation . '.name')
+                TextColumn::make($tenantRelation.'.name')
                     ->label(__('filament-dynamic-settings::settings.fields.tenant'))
                     ->sortable()
                     ->searchable()
@@ -258,7 +259,7 @@ class SettingResource extends Resource
             SelectFilter::make('module')
                 ->label(__('filament-dynamic-settings::settings.fields.module'))
                 ->options(collect(config('filament-dynamic-settings.modules', []))
-                    ->mapWithKeys(fn($config, $key) => [$key => $config['label']])
+                    ->mapWithKeys(fn ($config, $key) => [$key => $config['label']])
                     ->toArray()),
 
             SelectFilter::make('type')
@@ -271,9 +272,9 @@ class SettingResource extends Resource
 
         if (static::shouldShowAllTenants()) {
             $tenantRelation = config('filament-dynamic-settings.tenant_relation', 'tenant');
-            
-            array_unshift($filters, 
-                SelectFilter::make(config('filament-dynamic-settings.tenant_column','tenant_id'))
+
+            array_unshift($filters,
+                SelectFilter::make(config('filament-dynamic-settings.tenant_column', 'tenant_id'))
                     ->label(__('filament-dynamic-settings::settings.fields.tenant'))
                     ->relationship($tenantRelation, 'name')
                     ->searchable()
@@ -295,21 +296,19 @@ class SettingResource extends Resource
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     BulkAction::make('activate')
-                        ->label('Activate Selected')
+                        ->label(__('filament-dynamic-settings::settings.actions.activate'))
                         ->icon('heroicon-o-check-circle')
-                        ->action(fn($records) => $records->each->update(['is_active' => true]))
+                        ->action(fn ($records) => $records->each->update(['is_active' => true]))
                         ->requiresConfirmation()
                         ->color('success'),
                     BulkAction::make('deactivate')
-                        ->label('Deactivate Selected')
+                        ->label(__('filament-dynamic-settings::settings.actions.deactivate'))
                         ->icon('heroicon-o-x-circle')
-                        ->action(fn($records) => $records->each->update(['is_active' => false]))
+                        ->action(fn ($records) => $records->each->update(['is_active' => false]))
                         ->requiresConfirmation()
                         ->color('danger'),
                 ]),
-            ])
-            ->defaultSort('module')
-            ->poll('30s');
+            ]);
     }
 
     public static function getPages(): array
@@ -325,9 +324,9 @@ class SettingResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (config('filament-dynamic-settings.multi_tenant', false) && 
-            static::isScopedToTenant() && 
-            !static::shouldShowAllTenants()) {
+        if (config('filament-dynamic-settings.multi_tenant', false)
+            && static::isScopedToTenant()
+            && ! static::shouldShowAllTenants()) {
             $query->forTenant();
         }
 
