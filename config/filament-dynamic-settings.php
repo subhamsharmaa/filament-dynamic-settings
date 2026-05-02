@@ -46,6 +46,21 @@ return [
     */
     'layout' => 'tabs',
 
+    /**
+     * Layout configuration for tabs layout
+     */
+    'tabs_layout' => [
+        'vertical_tab' => false,
+        'contained' => true
+    ],
+
+    /**
+     * Layout configuration for sections layout
+     */
+    'sections_layout' => [
+        'aside' => false,
+        'collapsible' => false
+    ],
     /*
     |--------------------------------------------------------------------------
     | Default Module

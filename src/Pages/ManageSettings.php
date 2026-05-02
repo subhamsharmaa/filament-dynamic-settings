@@ -144,7 +144,9 @@ class ManageSettings extends Page implements HasForms
             Tabs::make('Settings')
                 ->tabs($tabs)
                 ->columnSpanFull()
-                ->persistTabInQueryString(),
+                ->persistTabInQueryString()
+                ->contained(config('filament-dynamic-settings.tabs_layout.contained', true))
+                ->vertical(config('filament-dynamic-settings.tabs_layout.vertical_tab', false))
         ];
     }
 
@@ -156,10 +158,12 @@ class ManageSettings extends Page implements HasForms
             $sections[] = Section::make($data['config']['label'])
                 ->description($data['config']['description'] ?? null)
                 ->icon($data['config']['icon'] ?? null)
+                ->aside(config('filament-dynamic-settings.sections_layout.aside', false))
+                ->collapsible(config('filament-dynamic-settings.sections_layout.collapsible', false))
                 ->schema([
                     Section::make()
                         ->schema($data['components'])
-                        ->statePath($moduleKey),
+                        ->statePath($moduleKey)
                 ]);
         }
 
