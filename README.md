@@ -21,6 +21,7 @@ php artisan filament-dynamic-settings install
 
 | Version | Filament Version |
 |---------|------------------|
+| `main`  | Filament v5      |
 | `^2.x`  | Filament v4      |
 | `^1.x`  | Filament v3      |
 
@@ -56,6 +57,50 @@ return [
     // ... other config
 ];
 ```
+
+## Layout Configuration
+
+This package allows you to customize the layout behavior of dynamic Filament forms.
+
+You can control how **tabs** and **sections** are rendered using configuration options.
+
+---
+
+### Tabs Layout
+
+Configure how tabs are displayed in your forms.
+
+```php
+'tabs_layout' => [
+    'vertical_tab' => false,
+    'contained' => true,
+],
+```
+| Option       | Type | Default | Description                          |
+| ------------ | ---- | ------- | ------------------------------------ |
+| vertical_tab | bool | false   | Display tabs in vertical orientation |
+| contained    | bool | true    | Wrap tabs inside a container layout  |
+
+## Sections Layout
+
+This package allows you to control how **form sections** are rendered in Filament dynamic forms.
+
+You can adjust layout behavior using the `sections_layout` configuration.
+
+---
+
+### Configuration
+
+```php
+'sections_layout' => [
+    'aside' => false,
+    'collapsible' => false,
+],
+```
+| Option      | Type | Default | Description                                           |
+| ----------- | ---- | ------- | ----------------------------------------------------- |
+| aside       | bool | false   | Displays the section in an aside (side column) layout |
+| collapsible | bool | false   | Enables collapsing/expanding of sections              |
 
 ## Usage
 
